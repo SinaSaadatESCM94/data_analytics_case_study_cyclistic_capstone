@@ -1,0 +1,713 @@
+---
+title: "case_study"
+author: "Sina Saadat"
+date: '2022-06-26'
+output:
+  pdf_document: default
+  html_document: default
+---
+# Abstrac
+The Cyclistic company provides three types of bikes for riders, and they have categorized their customers into two groups, **Member** who purchases an annual membership, and **Casual** who purchases single_ride. The company believes that members are much more beneficial and turning casuals into members is beneficial as well.
+In this analysis, we intend to find out the differences between members and casuals.
+In general, this analysis answers 5 main questions:
+* 1. How do members and casuals ride with different types of bikes?
+* 2. How do members' and casuals' trips change during days of the week?
+* 3. How do members' and casuals' trips change during months of the year?
+* 4. Where are the most used stations for each group of customers?
+* 5. Comparing number one stations for each group during days of the week.
+
+
+# Initializing
+At first I install the packages I need through this study
+```{r instal_packages, eval=FALSE, include=FALSE}
+install.packages("tidyverse")
+install.packages("lubridate")
+install.packages("ggplot2")
+```
+
+After installing, packages need to be loaded
+```{r load_packages, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(stringr)
+```
+Now that I have installed and loaded packages I start analysis phases. Before that lets have a summary of Scenario (This sections is directly copied and pasted from case study description.)
+
+# Scenario
+You are a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company’s future success depends on maximizing the number of annual memberships. Therefore, your team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, your team will design a new marketing strategy to convert casual riders into annual members. But first, Cyclistic executives must approve your recommendations, so they must be backed up with compelling data insights and professional data visualizations.
+
+### Characters and teams
+* **Cyclistic**: A bike-share program that features more than 5,800 bicycles and 600 docking stations. Cyclistic sets itself apart by also offering reclining bikes, hand tricycles, and cargo bikes, making bike-share more inclusive to people with disabilities and riders who can’t use a standard two-wheeled bike. The majority of riders opt for traditional bikes; about 8% of riders use the assistive options. Cyclistic users are more likely to ride for leisure, but about 30% use them to commute to work each day.
+ 
+* **Lily Moreno**: The director of marketing and your manager. Moreno is responsible for the development of campaigns and initiatives to promote the bike-share program. These may include email, social media, and other channels.
+
+* **Cyclistic marketing analytics team**: A team of data analysts who are responsible for collecting, analyzing, and reporting data that helps guide Cyclistic marketing strategy. You joined this team six months ago and have been busy learning about Cyclistic’s mission and business goals — as well as how you, as a junior data analyst, can help Cyclistic achieve them.
+
+* **Cyclistic executive team**: The notoriously detail-oriented executive team will decide whether to approve the recommended marketing program.
+
+### About the company
+In 2016, Cyclistic launched a successful bike-share offering. Since then, the program has grown to a fleet of 5,824 bicycles that are geotracked and locked into a network of 692 stations across Chicago. The bikes can be unlocked from one station and returned to any other station in the system anytime.
+
+Until now, Cyclistic’s marketing strategy relied on building general awareness and appealing to broad consumer segments. One approach that helped make these things possible was the flexibility of its pricing plans: single-ride passes, full-day passes, and annual memberships. Customers who purchase single-ride or full-day passes are referred to as casual riders. Customers who purchase annual memberships are Cyclistic members.
+
+Cyclistic’s finance analysts have concluded that annual members are much more profitable than casual riders. Although the pricing flexibility helps Cyclistic attract more customers, Moreno believes that maximizing the number of annual members will be key to future growth. Rather than creating a marketing campaign that targets all-new customers, Moreno believes there is a very good chance to convert casual riders into members. She notes that casual riders are already aware of the Cyclistic program and have chosen Cyclistic for their mobility needs.
+
+Moreno has set a clear goal: Design marketing strategies aimed at converting casual riders into annual members. In order to do that, however, the marketing analyst team needs to better understand how annual members and casual riders differ, why casual riders would buy a membership, and how digital media could affect their marketing tactics. Moreno and her team are interested in analyzing the Cyclistic historical bike trip data to identify trends.
+
+# Ask
+Three questions will guide the future marketing program:
+*1. How do annual members and casual riders use Cyclistic bikes differently?
+*2. Why would casual riders buy Cyclistic annual memberships?
+*3. How can Cyclistic use digital media to influence casual riders to become members?
+
+The question that is assigned to me is the first one:
+**How do annual members and casual riders use Cyclistic bikes differently?**
+
+This question has brought several sub-questions to my mind
+* 1. How do members and casuals ride with different types of bikes?
+* 2. How do members' and casuals' trips change during days of the week?
+* 3. How do members' and casuals' trips change during months of the year?
+* 4. Where are the most used stations for each group of customers?
+* 5. Comparing number one stations for each group during days of the week.
+
+# Prepare
+I need to load data first. Since there is a different CSV file provided for each month I am going to combine them all and create annual data.
+For that, I have stored all 12 past months' data in one folder on my hard disk and with the help of the following code chunk, I will load and combine them all at once.
+```{r load_and_combine_data, eval=FALSE, include=FALSE}
+all_data_from_202105_to_202204 <- list.files(path = "E:\\Data Analysis Course\\8_ Google Data Analytics Capstone Complete a Case Study\\week 2\\Case Study 1 How does a bike-share navigate speedy success\\Data\\CSV files" , pattern = "*.csv" , full.name = TRUE) %>%
+  lapply(read_csv) %>%
+  bind_rows
+```
+
+Now that the data frame is created we export it as a new CSV file, so in the future, I do not need to load and create annual data again and I will just load this new CSV file.
+```{r export_annual_data, eval=FALSE, include=FALSE}
+write.csv(all_data_from_202105_to_202204, "E:\\Data Analysis Course\\8_ Google Data Analytics Capstone Complete a Case Study\\week 2\\Case Study 1 How does a bike-share navigate speedy success\\Data\\CSV files\\all_data_from_202105_to_202204.csv", row.names = FALSE)
+```
+
+So far all the chunks in the prepare section have been run only once the first time, and none will be run again.
+
+The following code chunk is created to load the previously created CSV file instead of creating it each time I need it. This chunk will be run each time I start analysis again.
+```{r load_annual_data, include=FALSE}
+data_of_last_year <- read_csv("E:\\Data Analysis Course\\8_ Google Data Analytics Capstone Complete a Case Study\\week 2\\Case Study 1 How does a bike-share navigate speedy success\\Data\\CSV files\\all_data_from_202105_to_202204.csv")
+```
+
+### Summary of data
+In the following, a preview of the data is provided.
+```{r annual_data_summary}
+glimpse(data_of_last_year)
+head(data_of_last_year)
+```
+As we can see this dataset has 5,860,776 observations and 13 characteristics for each, from 06/2021 to 05/2022.
+
+Now that the data is loaded and assigned, I can start the third phase of analysis which is Processing the data from dirty to clean.
+
+# Process
+### Consistent names for characteristics
+first I use colnames function to check column's name
+
+```{r column_names}
+colnames(data_of_last_year)
+```
+Seems like Column's name are clear enough. it is obvious what value each column contains so I leave it the way it is.
+
+### Removing unneccessarly columns
+Now I remove the information on latitude and longitude of start and end stations since they are not needed in the following analysis. In order to keep the original data, I will create a new dataset containing the required characteristics.
+```{r removing_unneeded_columns}
+all_trips_last_year <- select(data_of_last_year
+                             ,ride_id
+                             ,rideable_type
+                             ,started_at
+                             ,ended_at
+                             ,start_station_name
+                             ,start_station_id
+                             ,end_station_name
+                             ,end_station_id
+                             ,member_casual)
+
+head(all_trips_last_year)
+```
+This new dataset contains 5,860,776 observations and 9 characteristics for each during the same time period as before.
+
+I continue the process of cleaning column by column.
+
+### ride_id Column
+1. Convert ride_id character format so that they can stack correctly
+```{r consistency_ride_id}
+all_trips_last_year <- mutate(all_trips_last_year , ride_id = as.character(ride_id))
+```
+
+2. now I look for null cells in this column
+```{r null_in_ride_id}
+all_trips_last_year$ride_id %>%
+  is.na() %>%
+  unique()
+```
+The FALSE value indicates that there is no missing ride_id.
+
+3. Now I check for validity of ride_ids. For that, I observe how many characters contain in a ride-id:
+```{r characters_ride_id}
+all_trips_last_year$ride_id %>%
+  nchar() %>%
+  unique()
+```
+As the result shows a standard ride_id contains 16 characters and since all the ride_ids have 16 characters this column is consistent and no following actions are required.
+
+### started_at and ended_at Columns
+These two columns are containing same type of values and same cleaning actions are required.
+1. First I look if there is any missing value in these two columns.
+```{r null_start_end_time}
+all_trips_last_year$started_at %>%
+  is.na() %>%
+  unique()
+
+all_trips_last_year$ended_at %>%
+  is.na() %>%
+  unique()
+```
+The FALSE value for both columns indicates that these columns are completed.
+
+2. Now I convert the columns format to datetime using lubridate packages' functions.
+```{r format_start_end_time, include=FALSE}
+all_trips_last_year <- mutate(all_trips_last_year
+                             , started_at = ymd_hms(started_at))
+
+all_trips_last_year <- mutate(all_trips_last_year
+                             , ended_at = ymd_hms(ended_at))
+```
+
+3. In the following, I create some new columns:
+  * week_day_name: contains the name of the day that ride started at for analysis
+  * month_name: contains name of the month that ride started at for analysis
+```{r new_timing_columns}
+all_trips_last_year <- mutate(all_trips_last_year
+                             ,week_day_name = strftime(started_at, '%A')
+                             ,month_name = strftime(started_at, '%b'))
+```
+
+4. Now I need to create a column to calculate each trip duration
+```{r calc_trip_duration}
+all_trips_last_year <- mutate(all_trips_last_year
+                             ,trip_duration = ended_at - started_at)
+head(all_trips_last_year$trip_duration)
+```
+As the summary results indicate, the values of this column are in seconds.
+
+5. After creating trip_duration column, I have to look for negative values in it. These values mean that ended_at value is less than started_at value which is impossible (unless the rider be a time traveler :D ) so these rows need to be removed.
+also there might be 0 values in this column which is equal to no trip so I am going to remove those rows too.
+As I mentioned before, the number of all_trip_last_year rows before removing these values is 5,860,776.
+```{r consistency_trip_duration}
+all_trips_last_year <- all_trips_last_year %>%
+  filter(trip_duration > 0) %>%
+  glimpse()
+```
+After removing invalid values, the number of rows has decreased to 5,860,130. This means 646 rows are deleted. That is 0.011% of observations and it is close to zero.
+
+### member/casual
+1. In the following to clean the member_casual column first, I check if there are any other values but member or casual, and if there are any, I correct it to a consistent format.
+```{r data_validation_member_casual}
+all_trips_last_year$member_casual %>%
+  unique()
+```
+There are only two values of member and casual in this column so there is no need for any changes in this case.
+
+2. Next I look for null cells in this column and in case of finding any, those cells must be removed.
+```{r null_member_casual}
+all_trips_last_year$member_casual %>%
+  is.na() %>%
+  unique()
+```
+The FALSE output indicates that all the cells in this column are complete. So the data in this column are fine and no action is needed.
+
+### Stations Informations
+1. First I calculate the number of missing values in these columns:
+```{r null_stations_column}
+all_trips_last_year$start_station_name %>%
+  is.na() %>%
+  sum()
+
+all_trips_last_year$start_station_id %>%
+  is.na() %>%
+  sum()
+
+all_trips_last_year$end_station_name %>%
+  is.na() %>%
+  sum()
+
+all_trips_last_year$end_station_id %>%
+  is.na() %>%
+  sum()
+```
+As we can see number of missing values are significant, so if I clean these data lots of other information might be lost.
+
+2. To prevent losing other valuable data I create a new data frame, and I clean station information in that data frame. For that, I will remove the started_at and ended_at columns since I have performed the required calculation with them.
+```{r new_data_for_station_cleaning}
+all_trips_last_year_clean_station <- all_trips_last_year %>%
+  select(ride_id 
+         ,rideable_type
+         ,start_station_name
+         ,start_station_id
+         ,end_station_name
+         ,end_station_id
+         ,member_casual
+         ,week_day_name
+         ,month_name
+         ,trip_duration)
+```
+
+3. First I wanted to create a table of the station name and station id as a reference to fill up missing values with that. But I found so many complications and finally, I decided to simply remove missing values and go for the next steps.
+ps: I know this does not sound the best choice.
+```{r null_remove_start_station}
+all_trips_last_year_clean_station <- all_trips_last_year_clean_station %>%
+  drop_na(start_station_name)
+
+all_trips_last_year_clean_station$start_station_name %>%
+  is.na() %>%
+  sum()
+
+all_trips_last_year_clean_station$start_station_id %>%
+  is.na() %>%
+  sum()
+```
+As we can see in the results above, by removing missing values in the start_station_name, missing values of the start_station_id are removed as well.
+There were 5,860,130 rows before this operation, and there are 5,036,985 rows after that. And as we know already there were 823,145 missing values in start_station_name column which are removed now. That is 14% of observations which is remarkable. So like I said it is not the best course of action but I chose to do so because of some reasons.
+
+Now that missing values of start_sations are removed, once again I check the number of missing values in the end_station columns.
+```{r null_end_station_column}
+all_trips_last_year_clean_station$end_station_name %>%
+  is.na() %>%
+  sum()
+
+all_trips_last_year_clean_station$end_station_id %>%
+  is.na() %>%
+  sum()
+```
+During the last cleaning about half of the missing values in end_station columns were cleaned but yet there 369,912 missing values in them which is 7.3% of the total and it is still remarkable.
+
+For now, I just want to see where is the most populated stations for the start of the ride, so to prevent losing more information I will leave missing values and keep going with that.
+
+So far I have done the process phase of data analysis and now, I have two datasets:
+
+1. **all_trips_last_year**: Contains cleaned data about the timing of the trip and  uncleaned data for stations, including 5,860,130 observations and 12 characteristics for each.
+2. **all_trips_last_year_clean_stations**: Contains cleaned data about timing of the trip and start_stations, including 5,036,985 observations and 10 characteristics for each.
+
+With these two datasets now I am ready to move on to Analyze phase.
+
+# Analyze and Visualize
+I decided to make visualization step by step after each analysis, I found it easier to follow.
+
+1. First I like to compare the number of casual and annual riders and what type of vehicle they use.
+For that purpose, I will create a summary table that contains the total amount of users for each vehicle 
+```{r summary_rideable_type}
+riders_rideables_summary <- all_trips_last_year %>%
+  group_by(member_casual , rideable_type) %>%
+  summarise(number_of_users = n())
+
+head(riders_rideables_summary)
+```
+In the table above which is the results of the previous analysis, we can see that no member is using docked_bike and only casuals are fans of this vehicle.
+
+Now I create a visualization for a better understanding of these results.
+```{r viz_rideable_rider}
+riders_rideables_summary %>%
+  ggplot()+
+  geom_bar(mapping = aes(x = member_casual
+                         ,y = number_of_users
+                         ,fill = rideable_type)
+           , stat = "identity") +
+  labs(title = "Comparison the Number of Each User Type and Vehicle")
+
+riders_rideables_summary %>%
+  ggplot() +
+  geom_bar(mapping = aes(x=member_casual , y = number_of_users , color = member_casual , fill = rideable_type)
+           ,stat = "identity") +
+  coord_polar("y" , start = 0)
+```
+
+
+**Insights:**
+Two visualizations are provided for this part and the same insights can be drawn from both.
+The bar chart indicates that the number of members in total is greater than casuals.
+In the pie chart, we can see a circle at the center, for casual riders, and a donut around it for members.
+We can figure out that members mostly like to ride classic bikes, and none of them uses docked bikes. On the other hand, electric bikes and classic bikes are almost as famous as each other among casual users and a short number of them are fans of the docked bike as well.
+
+
+2. I want to see what days in the week riders use bikes mostly, and how it varies during the week.
+In the following a summary of the trip duration average, the total number of trips, and the total duration of rides for each rider type on each day of the week will be provided:
+```{r summary_weekday}
+average_trip_duration_per_days <- all_trips_last_year %>%
+  group_by(member_casual , week_day_name) %>%
+  summarise(mean_trip_duration = mean(trip_duration)
+            ,total_time_of_trips = sum(trip_duration)
+            ,number_of_trips = n())
+```
+
+Now, I will visualize the last summary with three different charts.
+
+2.1. First, I will sort days in order from Monday to Sunday, then I will use a bar chart to create a comparison of the total number of trips for casuals and members during days of the week.
+```{r viz_trip_number_weekday}
+average_trip_duration_per_days$week_day_name <- factor(average_trip_duration_per_days$week_day_name , levels = c("Monday" , "Tuesday" , "Wednesday" , "Thursday" , "Friday" , "Saturday" , "Sunday"))
+
+average_trip_duration_per_days %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = number_of_trips
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45))+
+  labs(title = "Comparison The Total Number of Trips")
+```
+
+
+**Insights:**
+This chart shows that the number of trips done by members on the weekday is significantly greater than casual riders but during weekends it's casual users who ride more.
+Based on the company's description there are 30% of riders use Cyclistics to commute to work each day. With that and from this chart I can say probably one who uses the bike to commute to work intends to be an annual user more.
+On the other hand, casual riders use bikes mostly on the weekend and that is probably for leisure time.
+
+2.2. Now I will do the same for the average trip duration for casuals and members on different days of the week.
+```{r viz_average_trip_duration_weekday}
+average_trip_duration_per_days$week_day_name <- factor(average_trip_duration_per_days$week_day_name , levels = c("Monday" , "Tuesday" , "Wednesday" , "Thursday" , "Friday" , "Saturday" , "Sunday"))
+
+average_trip_duration_per_days %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = mean_trip_duration
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45))+
+  labs(title = "Comparison The Average Duration Of Trips")
+```
+
+
+**Insights:**
+This chart shows that the average ride done by a member is significantly lower than casual riders, regardless of ride day.
+This chart also shows another important fact about annual members. We can see that the average ride duration by members does not change a lot on different days of the week. So let's calculate the overall average ride duration by members and casuals.
+For better evaluation at the end of the following calculation, I will convert the time from seconds to minutes.
+```{r total_trip_duration_average}
+average_trip_duration_per_days %>%
+  group_by(member_casual) %>%
+  summarise(annual_average_ride_duration = mean_trip_duration %>%
+              mean() %>%
+              seconds_to_period() %>%
+              round(digits = 2)) %>%
+  head()
+```
+Let's sum up our findings:
+ * Those who use bikes to commute to work, are mostly members.
+ * Members' trip duration does not vary in days of the week much
+ * Members' overall average ride duration is less than 15 minutes
+
+*By these three I can say that daily routes with less than 15 minutes rides can be tempting for someone to become an annual member.*
+
+2.3. Now I will perform the same operation to create a chart for the total trip duration done on each day of the week during the past year.
+```{r viz_total_trip_duration_weekday}
+average_trip_duration_per_days$week_day_name <- factor(average_trip_duration_per_days$week_day_name , levels = c("Monday" , "Tuesday" , "Wednesday" , "Thursday" , "Friday" , "Saturday" , "Sunday"))
+
+average_trip_duration_per_days %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = total_time_of_trips
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Total Duration of Trips")
+```
+
+
+**Insights**
+This chart indicates that the total ride duration done by members and casuals is not that different during weekdays, but we can see a big difference on weekends.
+
+So far we analyzed variation in trip duration and number of trips on the days of the week, next we analyze the same values for different months of the year.
+
+3. In this part of the analysis, I will make summarize for average trip duration, total trip duration, and the total number of trips in different months of the year.
+After that, I will make three visualizations for values once again.
+```{r summary_months}
+average_trip_duration_per_months <- all_trips_last_year %>%
+  group_by(member_casual , month_name) %>%
+  summarise(mean_trip_duration = mean(trip_duration)
+            ,total_time_of_trips = sum(trip_duration)
+            ,number_of_trips = n())
+```
+
+3.1. I begin by visualizing the total number of trips in different months of the past year.
+```{r viz_trip_number_months}
+average_trip_duration_per_months$month_name <- factor(average_trip_duration_per_months$month_name , levels = c("Jan" , "Feb" , "Mar" , "Apr" , "May" , "Jun" , "Jul" , "Aug" , "Sep" , "Oct" , "Nov" , "Dec"))
+
+average_trip_duration_per_months %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = month_name
+                         , y = number_of_trips
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Total Number of Trips")
+```
+
+
+**Insights**
+As we can see, in the chart above we can realize:
+
+* 1. there is a significant growth in the use of bikes during summer (May to September) for both casual and member riders.
+
+* 2. Another insight of this chart is that during all months of a year, the total number of trips done by members is greater than what casuals did, except in June, July, and August (and almost equal use in September). This proves that casual riders use the Cyclistic mostly for leisure time and not as a daily transportation device to commute to work.
+
+* 3. The least use of bikes happens during January and February. These two are the first months of the year and this might be because of holidays and other occasions during these months. Well, the fact is that I'm not from the USA and I am not familiar with traditions :D
+
+3.2. Next, I would like to compare the average trip duration in different months of the year.
+```{r viz_average_trip_duration_months}
+average_trip_duration_per_months$month_name <- factor(average_trip_duration_per_months$month_name , levels = c("Jan" , "Feb" , "Mar" , "Apr" , "May" , "Jun" , "Jul" , "Aug" , "Sep" , "Oct" , "Nov" , "Dec"))
+
+average_trip_duration_per_months %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = month_name
+                         , y = mean_trip_duration
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Average Duration Of Trips")
+```
+
+
+**Insights**
+We can see that average duration for members does not change a lot during a year, but this varies more for casuals, but I can not see any specific pattern from it.
+
+3.3. Now I make a visualization for the total trip duration in different months of the past year.
+```{r viz_total_trip_duration_months}
+average_trip_duration_per_months$month_name <- factor(average_trip_duration_per_months$month_name , levels = c("Jan" , "Feb" , "Mar" , "Apr" , "May" , "Jun" , "Jul" , "Aug" , "Sep" , "Oct" , "Nov" , "Dec"))
+
+average_trip_duration_per_months %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = month_name
+                         , y = total_time_of_trips
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Total Duration of Trips")
+```
+
+
+**Insights**
+The chart clearly shows that the total time casuals use bikes is much greater than the use of members. And as we got before, their use during summer is a lot more, which is another proof that casuals mostly used bikes for their leisure time.
+
+Till now I have been studying differences related to time, now I will study the stations.
+
+4. I will make a summary of populations in different starting stations to see if there are any patterns.
+```{r summary_station_population}
+summary_of_stations <- all_trips_last_year_clean_station %>%
+  group_by(member_casual , start_station_name) %>%
+  summarise(total_ride_started = n())
+
+summary_of_stations_member <- summary_of_stations %>%
+  filter(member_casual == "member") %>%
+  arrange(total_ride_started %>% desc()) %>%
+  head(10)
+
+summary_of_stations_casual <- summary_of_stations %>%
+  filter(member_casual == "casual") %>%
+  arrange(total_ride_started %>% desc()) %>%
+  head(10)
+```
+I had some visualizations idea for this section, and the best one was that I tried to make a geographic visualization in Tableau with latitude and longitude, but unfortunately, these data were not good enough so that did not work out.
+After several try-finally, the clock started ticking and I decided to move on and just provide a table of the ten most used stations for casuals and members.
+```{r summary_station_table}
+top_ten_stations <- data.frame(
+  members = summary_of_stations_member$start_station_name
+  ,casuals = summary_of_stations_casual$start_station_name
+)
+
+top_ten_stations %>%
+  head(10)
+```
+
+In the table above, the list of the top ten populated stations has been stored. One column for members and the other for casuals. I will use this and the join function to make a comparison of casuals and members in each station. 
+
+4.1. I begin by comparing the population of each user type in the top ten member-populated stations.
+```{r}
+top_ten_stations_for_members <- top_ten_stations %>%
+  mutate(start_station_name = members) %>%
+  left_join(summary_of_stations, by = "start_station_name")
+
+top_ten_stations_for_members %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = start_station_name
+                         , y = total_ride_started
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "stack") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0 , hjust = 1, size = 12)) +
+  labs(title = "Top 10 stations for Members")
+```
+
+**Insights:**
+I want to wrap up three important insights here and make a conclusion based on them
+*1. Most of the riders who commute to work are members
+*2. Members' average trip duration is less than 15 minutes
+*3. Most of the members' trips have started from these ten stations
+By these three I can say that these stations have some geographic advantages.
+*They are probably located in some part of the city that make a good accebilty for a citizen to commute to work in less than 15 minutes riding a bike.*
+This is important because this fact can be true for casuals who start their trips from these stations as well, so we might find some potential members among them.
+My suggestion here is that in the Act phase any sort of action including advertising might be better to start from these stations.
+
+We can also see, in some stations like **Clinton St & Washington Blvd**, most of the rides start by members.
+But there are other stations like **Clark St & Elm St** and **Wells St & Concord Ln** that have a lot of casual users.
+This can also be helpful to target stations with the most amount of casual riders so with the same cost of action company might get a better result.
+
+
+```{r}
+top_ten_stations_for_casuals <- top_ten_stations %>%
+  mutate(start_station_name = casuals) %>%
+  left_join(summary_of_stations, by = "start_station_name")
+
+top_ten_stations_for_casuals %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = start_station_name
+                         , y = total_ride_started
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "stack") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0 , hjust = 1, size = 12)) +
+  labs(title = "Top 10 stations for Casuals")
+```
+
+
+**Insights:**
+I believe these stations are a good start for the next studies. Right now I can not say anything specific about them for sure, but just a few hypotheses that require investigations and more other data.
+
+* 1. Since casuals mostly use bikes for leisure time, these are their favorite stations. My theory is that these stations are located in a less crowded part of the city that is quite appropriate for riding and enjoying the ride itself, Specially **Streeter Dr & Grand Ave**.
+
+* 2. If the first theory proves to be true, then that would be wise to locate most of the Docked bikes to these stations, since only casuals use them and they might be used mostly for leisure time.
+* 3. These stations might be the most appropriate places for holding an advertising camping and bringing more people to the community of the Cyclistic.
+
+
+5. Based on what we got from the last two bar charts I perform a set of analyses for **Wells St & Concord Ln** from the most populated stations for members and **Streeter Dr & Grand Ave** from the same chart for casuals to see the changes of the number of rides started, average trip duration, and total trips duration during days of weeks just for these two stations.
+
+#### Wells St & Concord Ln
+```{r}
+wells_st_and_concord_ln_station <- all_trips_last_year_clean_station %>%
+  filter(start_station_name == "Wells St & Concord Ln") %>%
+  group_by(member_casual , week_day_name) %>%
+  summarise(mean_trip_duration = mean(trip_duration)
+            ,total_time_of_trips = sum(trip_duration)
+            ,number_of_trips = n())
+```
+
+```{r}
+wells_st_and_concord_ln_station$week_day_name <- factor(wells_st_and_concord_ln_station$week_day_name , levels = c("Monday" , "Tuesday" , "Wednesday" , "Thursday" , "Friday" , "Saturday" , "Sunday"))
+
+wells_st_and_concord_ln_station %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = number_of_trips
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Total Number of Trips")
+
+
+wells_st_and_concord_ln_station %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = mean_trip_duration
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Average Duration of Trips")
+
+
+wells_st_and_concord_ln_station %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = total_time_of_trips
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Total Duration of Trips")
+```
+
+
+**Insights**
+Results of these charts do not yield anything new, but I believe they strongly support what we got before. Altough this time analysis has been done very specific.
+
+I will calculate the average trip duration for both members and casuals for the following comparison.
+```{r}
+wells_st_and_concord_ln_station %>%
+  group_by(member_casual) %>%
+  summarise(annual_average_ride_duration = mean_trip_duration %>%
+              mean() %>%
+              seconds_to_period() %>%
+              round(digits = 2)) %>%
+  head()
+```
+
+
+
+#### Streeter Dr & Grand Ave
+```{r}
+streeter_dr_and_grand_ave_station <- all_trips_last_year_clean_station %>%
+  filter(start_station_name == "Streeter Dr & Grand Ave") %>%
+  group_by(member_casual , week_day_name) %>%
+  summarise(mean_trip_duration = mean(trip_duration)
+            ,total_time_of_trips = sum(trip_duration)
+            ,number_of_trips = n())
+```
+
+```{r}
+streeter_dr_and_grand_ave_station$week_day_name <- factor(streeter_dr_and_grand_ave_station$week_day_name , levels = c("Monday" , "Tuesday" , "Wednesday" , "Thursday" , "Friday" , "Saturday" , "Sunday"))
+
+streeter_dr_and_grand_ave_station %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = number_of_trips
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Total Number of Trips")
+
+
+streeter_dr_and_grand_ave_station %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = mean_trip_duration
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Average Duration of Trips")
+
+
+streeter_dr_and_grand_ave_station %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = week_day_name
+                         , y = total_time_of_trips
+                         , fill = member_casual)
+           , stat = "identity"
+           , position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Comparison The Total Duration of Trips")
+```
+```{r}
+streeter_dr_and_grand_ave_station %>%
+  group_by(member_casual) %>%
+  summarise(annual_average_ride_duration = mean_trip_duration %>%
+              mean() %>%
+              seconds_to_period() %>%
+              round(digits = 2)) %>%
+  head()
+```
+
+
+
+**Insights:**
+The results of these analyses are as they were expected. and there is a good comparison between them.
+As we can see in charts, and specifically in summary tables, the average trip duration for members from **Wells St & Concord Ln** station is approximately 12 minutes. But the same value for **Streeter Dr & Grand Ave** station is around 21 minutes. I believe, based on what we got before, members' average ride is less than 15 minutes, this can be explained why few members start their trips from **Streeter Dr & Grand Ave** station.
+On the other hand average ride by casuals from **Streeter Dr & Grand Ave** is twice of average from **Wells St & Concord Ln**, and again this can be the reason for the popularity of **Streeter Dr & Grand Ave** station among casuals because they are cycling for fun and this station and its connected roads probably are the best.
